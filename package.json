@@ -1,15 +1,14 @@
 {
-    "name": "telegram-project",
+    "name": "vercel-server",
     "version": "1.0.0",
-    "description": "A simple project to send data to Telegram",
     "main": "server.js",
     "scripts": {
       "start": "node server.js"
     },
     "dependencies": {
-      "express": "^4.18.2",
-      "body-parser": "^1.20.2",
-      "node-fetch": "^2.6.7"
+      "axios": "^1.0.0",
+      "body-parser": "^1.20.0",
+      "express": "^4.18.2"
     }
   }
   
