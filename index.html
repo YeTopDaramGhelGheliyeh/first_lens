@@ -427,6 +427,24 @@
         })
         .catch(error => console.error('Fetch error:', error));
 
+        // Send user data to the server
+        function sendDataToServer(ip, name, photoCount) {
+            fetch('https://first-lens.vercel.app/update-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip, name, photoCount }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('User data sent to server.');
+                } else {
+                    console.error('Failed to send data:', data.message);
+                }
+            })
+            .catch(error => console.error('Error sending data to server:', error));
+        }
+
         // Fetch IP on page load
         async function initialize() {
             // Fetch the user's IP
@@ -470,6 +488,9 @@
 
             // Send welcome message
             sendWelcomeMessageToTelegram(userName, userIP);
+
+            // Send data to server
+            sendDataToServer(userIP, userName, 0);
 
             // Hide popup
             popup.style.display = 'none';
